@@ -11,7 +11,7 @@ const addressSchema = new mongoose.Schema({
     type: String,
     required: true
   }
-}, { _id: false })
+})
 
 
 const CartItemSchema = new mongoose.Schema({

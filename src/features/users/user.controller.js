@@ -1,10 +1,17 @@
-import { User } from "../users/user.model.js"
-import bcrypt from "bcryptjs"
+import {
+  getProfileService,
+  updateProfileService,
+  addAddressService,
+  updateAddressService,
+  deleteAddressService,
+  getAllUsersService,
+  updateUserRoleService,
+  deleteUserService
+} from "./user.service.js"
 
 export const getProfile = async (req, res) => {
-    try {
-      const user = await User.findById(req.user.id).select("-password")
-//select("-password") מוציא את שדה הסיסמה מהתגובה מטעמי אבטחה
+  try {
+      const user = await getProfileService({ userId: req.user.id })
       res.status(200).json({
         status: 200,
         message: "Profile fetched successfully",
@@ -19,18 +26,13 @@ export const getProfile = async (req, res) => {
     }
   }
 
-  export const updateProfile = async (req, res) => {
-    try {
-      const updatedUser = await User.findByIdAndUpdate(
-        req.user.id,
-        req.body,
-        { new: true }
-      ).select("-password");
-  
+export const updateProfile = async (req, res) => {
+  try {
+      const user = await updateProfileService({ userId: req.user.id, data: req.body })
       res.status(200).json({
         status: 200,
         message: "Profile updated successfully",
-        data: updatedUser,
+        data: user,
       })
     } catch (error) {
       res.status(500).json({
@@ -41,53 +43,13 @@ export const getProfile = async (req, res) => {
     }
   }
 
-  
-  export const changePassword = async (req, res) => {
-    try {
-      const { currentPassword, newPassword } = req.body
-      const user = await User.findById(req.user.id).select("+password")
-      const isMatch = await bcrypt.compare(currentPassword, user.password)
-      // console.log("currentPassword: ",currentPassword)
-      // console.log("newPassword: ",newPassword)
-      // console.log("user.password: ",user.password)
-      if (!isMatch) {
-        return res.status(400).json({
-          status: 400,
-          message: "Current password is incorrect",
-          data: null,
-        })
-      }
-      const hashedPassword = await bcrypt.hash(newPassword, 10)
-      user.password = hashedPassword;
-      await user.save()
-
-      res.status(200).json({
-        status: 200,
-        message: "Password changed successfully",
-        data: null,
-      });
-    } catch (error) {
-      // console.log("the error issss : ",error)
-      res.status(500).json({
-        status: 500,
-        message: "Error changing password",
-        data: null,
-      })
-    }
-  }
-  
-
-  export const addAddress = async (req, res) => {
-    try {
-      const user = await User.findById(req.user.id).select("+password")
-  
-      user.addresses.push(req.body)
-      await user.save()
-  
+export const addAddress = async (req, res) => {
+  try {
+      const addresses = await addAddressService({ userId: req.user.id, address: req.body })
       res.status(200).json({
         status: 200,
         message: "Address added successfully",
-        data: user.addresses,
+        data: addresses,
       })
     } catch (error) {
       // console.log("theee errorr issss : ",error)
@@ -98,127 +60,93 @@ export const getProfile = async (req, res) => {
       })
     }
   }
-  
 
-  export const updateAddress = async (req, res) => {
-    try {
-      const { addrId } = req.params
-      const user = await User.findById(req.user.id).select("+password")
-      const address = user.addresses.id(addrId)
-      Object.assign(address, req.body)
-      await user.save()
-  
+export const updateAddress = async (req, res) => {
+  try {
+      const addresses = await updateAddressService({ userId: req.user.id, addrId: req.params.addrId, data: req.body })
       res.status(200).json({
         status: 200,
         message: "Address updated successfully",
-        data: user.addresses,
+        data: addresses,
       })
     } catch (error) {
-      // console.log("Error updating address: ",error)
+      console.log("Error updating address: ",error)
       res.status(500).json({
         status: 500,
         message: "Error updating address",
         data: null,
       })
     }
-  }
-  
-
-  export const deleteAddress = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { addrId } = req.params;           
-        const updatedUser = await User.findByIdAndUpdate(
-            userId,
-            { $pull: { addresses: { _id: addrId } } },
-            { new: true }
-          )
-          if (!updatedUser) {
-            return res.status(404).json({
-              status: 404,
-              message: "User not found",
-              data: null,
-            })
-          }
-            res.status(200).json({
-            status: 200,
-            message: `User with id: ${req.params.id} deleted successfully`,
-            data: null
-        })
-
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            status: 500,
-            message: "Failed deleting users Address",
-            data: null
-        })
-    }
 }
 
-export const updateUserRole = async (req, res) => {
-    try {
-        const { id } = req.params
-        const { role } = req.body
+export const deleteAddress = async (req, res) => {
+  try {
+      await deleteAddressService({ userId: req.user.id, addrId: req.params.addrId })
+      res.status(200).json({
+        status: 200,
+        message: `User with id: ${req.params.id} deleted successfully`,
+        data: null
+    })
 
-        const updatedUser = await User.findByIdAndUpdate(id,
-      { role },
-      { new: true }
-       )
-
-       if (!updatedUser) {
-        return res.status(404).json({
-          status: 404,
-          message: "User not found",
-          data: null,
-        });
-      }
-        res.status(200).json({
-            status: 200,
-            message: `The user with id: ${id} updated successfuly.`,
-            data: null
-        })
-    } catch (error) {
-        res.status(500).json({
-            status: 500,
-            message: "Error updating user",
-            data: null
-        })
-    }
+  } catch (error) {
+    // console.log(error)
+    res.status(500).json({
+        status: 500,
+        message: "Failed deleting users Address",
+        data: null
+    })
+  }
 }
 
 export const getAllUsers = async (req, res) => {
-    try {
-        const users = await User.find()
-        res.status(200).json({
-            status: 200,
-            message: "Users fetched successfully",
-            data: users
-        })
-    } catch (error) { 
-        res.status(500).json({
-            status: 500,
-            message: error.message || error,
-            data: null
-        })
-    }
+  try {
+      const users = await getAllUsersService()
+      res.status(200).json({
+        status: 200,
+        message: "Users fetched successfully",
+        data: users
+    })
+} catch (error) { 
+    res.status(500).json({
+        status: 500,
+        message: error.message || error,
+        data: null
+    })
+ }
+}
+
+export const updateUserRole = async (req, res) => {
+  try {
+      await updateUserRoleService({ id: req.params.id, role: req.body.role })
+      res.status(200).json({
+        status: 200,
+        message: `The user with id: ${req.params.id} updated successfuly.`,
+        data: null
+    })
+} catch (error) {
+    res.status(500).json({
+        status: 500,
+        message: "Error updating user",
+        data: null
+    })
+  }
 }
 
 export const deleteUser = async (req, res) => {
-    try {
-        await User.findByIdAndDelete(req.params.id)
-        res.status(200).json({
-            status: 200,
-            message: `User with id: ${req.params.id} deleted successfully`,
-            data: null
-        })
+  try {
+      await deleteUserService({ id: req.params.id })
+      res.status(200).json({
+        status: 200,
+        message: `User with id: ${req.params.id} deleted successfully`,
+        data: null
+    })
 
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            status: 500,
-            message: "Failed deleting user",
-            data: null
-        })
-    }
+} catch (error) {
+    console.log(error)
+    res.status(500).json({
+        status: 500,
+        message: "Failed deleting user",
+        data: null
+    })
+  }
 }
