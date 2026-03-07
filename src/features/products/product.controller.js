@@ -1,9 +1,16 @@
-import { Product } from "../products/product.model.js"
-import { uploadToCloudinary } from "./cloudinary.service.js"
+import { 
+  getAllProductsService,
+  getProductByIdService,
+  getProductByCategoryService,
+  createNewProductService,
+  updateProductService,
+  deleteProductService,
+  addRatingService
+} from "./product.service.js"
 
 export const getAllProducts = async (req, res) => {
     try {
-      const products = await Product.find({ isActive: true }).sort({ createdAt: -1 });
+      const products = await getAllProductsService()
       res.status(200).json({
         status: 200,
         message: "products fetched successfully",
@@ -19,8 +26,7 @@ export const getAllProducts = async (req, res) => {
   }
 export const getProductById = async (req, res) => {
     try {
-       const { id } = req.params
-       const product = await Product.findById(id)
+      const product = await getProductByIdService({ id: req.params.id })
         res.status(200).json({
         status: 200,
         message: "product fetched successfully",
@@ -37,23 +43,12 @@ export const getProductById = async (req, res) => {
   }
 export const getProductByCategory = async (req, res) => {
     try {
-      const category = String(req.params.category || "").toLowerCase()
-      // console.log("category: ",category)
-      const products = await Product.find({ category })
-        // console.log("products: ",products)
-
-        if (!products.length) {
-          return res.status(404).json({
-            status: 404,
-            message: "No products found for this category",
-            data: [],
-          })
-        }
+      const products = await getProductByCategoryService({ category: req.params.category })
         res.status(200).json({
         status: 200,
-        message: `product by Category ${category} fetched successfully`,
+        message: `product by Category ${req.params.category} fetched successfully`,
         data: products,
-      });
+      })
     } catch (error) {
       res.status(500).json({
         status: 500,
@@ -65,26 +60,8 @@ export const getProductByCategory = async (req, res) => {
 
   export const createNewProduct = async (req, res) => {
     try {
-        const { name, description, price, category, stock } = req.body
-
-        let imageUrl = null
-        let imagePublicId = null
-
-        if (req.file) {
-            const result = await uploadToCloudinary(req.file.buffer)
-            imageUrl = result.secure_url
-            imagePublicId = result.public_id
-        }
-
-        const product = await Product.create({ 
-            name, 
-            description, 
-            price, 
-            category, 
-            stock,
-            images: imageUrl ? [imageUrl] : [],
-            imagePublicId
-        })
+      const { name, description, price, category, stock } = req.body
+      const product = await createNewProductService({ name, description, price, category, stock, file: req.file })
 
         res.status(201).json({
             status: 201,
@@ -92,7 +69,7 @@ export const getProductByCategory = async (req, res) => {
             data: product
         })
     } catch (error) {
-        console.log("error : ", error)
+        // console.log("error : ", error)
         res.status(500).json({
             status: 500,
             message: "Failed to create product",
@@ -104,16 +81,11 @@ export const getProductByCategory = async (req, res) => {
 
 export const updateProduct = async(req,res) =>{
   try {
-    const { id } = req.params
-    const updatedProduct = await Product.findByIdAndUpdate(
-      id,
-      req.body,
-      { new: true, runValidators: true }
-    )
+    const product = await updateProductService({ id: req.params.id, data: req.body })
        res.status(200).json({
           status: 200,
           message: "Product updated successfully",
-          data: updatedProduct,
+          data: product,
         })
   } catch (error) {
     console.log(error)
@@ -128,8 +100,8 @@ export const updateProduct = async(req,res) =>{
 
 export const deleteProduct = async (req, res) => {
   try {
-      await Product.findByIdAndUpdate(req.params.id, { isActive: false })
-      res.status(200).json({
+    await deleteProductService({ id: req.params.id })
+    res.status(200).json({
         status: 200,
         message: `Product with id: ${req.params.id} deactivated successfully`,
         data: null
@@ -145,29 +117,16 @@ export const deleteProduct = async (req, res) => {
 
   export const addRating = async (req, res) => {
     try {
-      const { id } = req.params
-      const product = await Product.findById(id)
-      if (!product) {
-        return res.status(404).json({
-          status: 404,
-          message: "Product not found",
-          data: null,
-        })
-      }
-  
-      const ratingData = {
-        user: req.user.id,          
-        rating: req.body.rating,     
-        comment: req.body.comment || ""
-      }
-  
-      product.ratings.push(ratingData);
-      await product.save()
-  
+      const ratings = await addRatingService({ 
+        id: req.params.id, 
+        userId: req.user.id, 
+        rating: req.body.rating, 
+        comment: req.body.comment 
+    })
       return res.status(200).json({
         status: 200,
         message: "Rating added successfully",
-        data: product.ratings,
+        data: ratings,
       })
     } catch (error) {
       // console.log("error:", error);
