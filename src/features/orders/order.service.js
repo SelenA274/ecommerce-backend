@@ -130,10 +130,10 @@ export const cancelOrderService = async ({ id }) => {
       })
     }
 
-if (order.orderStatus !== "pending") throw {
-    status: 400,
-    message: "Only pending orders can be cancelled"
-}
+    if (order.orderStatus !== "pending") throw {
+        status: 400,
+        message: "Only pending orders can be cancelled"
+    }
     await Order.findByIdAndDelete(id)
     return true
 }

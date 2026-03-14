@@ -75,8 +75,8 @@ export const getMyOrders = async (req, res) => {
                 data: {} 
             })
         }
-        return res.status(200).json({
-            status: 200,
+        return res.status(201).json({
+            status: 201,
             data: data
         })
 
