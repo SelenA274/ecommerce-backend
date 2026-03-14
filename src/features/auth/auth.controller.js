@@ -19,7 +19,10 @@ export const register = async (req, res) => {
         res.status(201).json({
             status: 201,
             message: "Verification code sent",
-            data: user
+            data: {
+              name: user.name,
+              email: user.email,
+          }
         })
     } catch (error) {
         const { code, keyValue } = error
@@ -67,7 +70,7 @@ export const login = async (req, res) => {
             data: token
         })
     } catch (error) {
-        console.log(error)
+        // console.log(error)
         res.status(500).json({
             status: 500,
             message: "Failed register a new user",

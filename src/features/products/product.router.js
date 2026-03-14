@@ -2,7 +2,9 @@ import express from "express"
 import { authMiddleware } from "../../shared/middleware/authMIddleware.js"
 import { isAdmin } from "../../shared/middleware/isAdmin.js"
 import { upload } from "../../config/multer.js"
-import { validateRequest } from "../../shared/middleware/validateRequest.js"
+import { validateRequest} from "../../shared/middleware/validateRequest.js"
+import { objectIdSchema } from "../../shared/schemas/objectId.schema.js"
+
 import {
   createProductSchema,
   updateProductSchema,
@@ -21,15 +23,12 @@ import {
 const router = express.Router()
 
 router.get("/", getAllProducts)
-router.get("/:id", getProductById)
 router.get("/category/:category", getProductByCategory)
-
 router.post("/", authMiddleware, isAdmin, upload.single("image"), validateRequest(createProductSchema, "body"), createNewProduct)
+router.get("/:id", validateRequest(objectIdSchema, "params"), getProductById)
+router.put("/:id", authMiddleware, isAdmin, validateRequest(objectIdSchema, "params"), validateRequest(updateProductSchema, "body"), updateProduct)
+router.delete("/:id", authMiddleware, isAdmin, validateRequest(objectIdSchema, "params"), deleteProduct)
+router.post("/:id/rating", authMiddleware, validateRequest(objectIdSchema, "params"), validateRequest(ratingSchema, "body"), addRating)
 
-router.put("/:id", authMiddleware, isAdmin, validateRequest(updateProductSchema, "body"), updateProduct)
-
-router.delete("/:id", authMiddleware, isAdmin, deleteProduct)
-
-router.post("/:id/rating", authMiddleware, validateRequest(ratingSchema, "body"), addRating)
 
 export default router

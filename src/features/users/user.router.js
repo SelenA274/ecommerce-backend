@@ -3,6 +3,8 @@ import { authMiddleware } from "../../shared/middleware/authMIddleware.js"
 import { checkPermissions } from "../../shared/middleware/checkPermissions.js"
 import { isAdmin } from "../../shared/middleware/isAdmin.js"
 import { validateRequest } from "../../shared/middleware/validateRequest.js"
+import { objectIdSchema } from "../../shared/schemas/objectId.schema.js"
+
 import {
   updateProfileSchema,
   changePasswordSchema,
@@ -27,7 +29,7 @@ router.post("/addresses/:id", authMiddleware, checkPermissions, validateRequest(
 router.put("/addresses/:addrId", authMiddleware, validateRequest(addressSchema, "body"), updateAddress)
 router.delete("/addresses/:addrId", authMiddleware, deleteAddress)
 router.get("/", authMiddleware, isAdmin, getAllUsers)
-router.put("/:id/role", authMiddleware, isAdmin, updateUserRole)
-router.delete("/:id", authMiddleware, isAdmin, deleteUser)
+router.put("/:id/role", authMiddleware, isAdmin, validateRequest(objectIdSchema, "params"), updateUserRole)
+router.delete("/:id", authMiddleware, isAdmin, validateRequest(objectIdSchema, "params"), deleteUser)
 
 export default router
