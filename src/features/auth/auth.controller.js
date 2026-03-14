@@ -16,8 +16,8 @@ export const register = async (req, res) => {
     try {
         const { name, email, password } = req.body
         const user = await registerService({name, email, password})
-        res.status(200).json({
-            status: 200,
+        res.status(201).json({
+            status: 201,
             message: "Verification code sent",
             data: user
         })
@@ -27,9 +27,9 @@ export const register = async (req, res) => {
         if (String(code) === "11000") {
             const { email } = keyValue
             if (email) {
-                return res.status(500).json({
-                    status: 500,
-                    message: "Cannot register with this email",
+                return res.status(409).json({
+                    status: 409,
+                    message: "Email already in use",
                     data: null
                 })
             }

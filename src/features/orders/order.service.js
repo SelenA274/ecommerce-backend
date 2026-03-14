@@ -86,7 +86,6 @@ export const getMyOrdersService  = async ({ userId }) => {
             totalItemsCount,
             grandTotal: Number(grandTotal.toFixed(2))
         }
-    
 }
 
 
@@ -117,6 +116,7 @@ export const updateOrderStatusService = async ({ id, orderStatus, trackingNumber
     }
     return order
 }
+
 export const cancelOrderService = async ({ id }) => {
     const order = await Order.findById(id)
 
@@ -129,6 +129,11 @@ export const cancelOrderService = async ({ id }) => {
         $inc: { stock: item.quantity } 
       })
     }
+
+if (order.orderStatus !== "pending") throw {
+    status: 400,
+    message: "Only pending orders can be cancelled"
+}
     await Order.findByIdAndDelete(id)
     return true
 }
