@@ -2,28 +2,34 @@ import express from "express"
 import { authMiddleware } from "../../shared/middleware/authMIddleware.js"
 import { isAdmin } from "../../shared/middleware/isAdmin.js"
 import { upload } from "../../config/multer.js"
-import {getAllProducts,
-        getProductById,
-        getProductByCategory,
-        createNewProduct,        
-        updateProduct,
-        deleteProduct,
-        addRating
- } from "../products/product.controller.js"
+import { validateRequest } from "../../shared/middleware/validateRequest.js"
+import {
+  createProductSchema,
+  updateProductSchema,
+  ratingSchema,
+} from "./product.schemas.js"
+import {
+  getAllProducts,
+  getProductById,
+  getProductByCategory,
+  createNewProduct,
+  updateProduct,
+  deleteProduct,
+  addRating,
+} from "./product.controller.js"
+
 const router = express.Router()
 
+router.get("/", getAllProducts)
+router.get("/:id", getProductById)
+router.get("/category/:category", getProductByCategory)
 
+router.post("/", authMiddleware, isAdmin, upload.single("image"), validateRequest(createProductSchema, "body"), createNewProduct)
 
-router.get("/", getAllProducts)//done
-router.get("/:id", getProductById)//done
-router.get("/category/:category", getProductByCategory)//done
+router.put("/:id", authMiddleware, isAdmin, validateRequest(updateProductSchema, "body"), updateProduct)
 
-router.post("/",authMiddleware, isAdmin, upload.single("image"), createNewProduct) //done
+router.delete("/:id", authMiddleware, isAdmin, deleteProduct)
 
-router.put("/:id",authMiddleware, isAdmin, updateProduct )//done
+router.post("/:id/rating", authMiddleware, validateRequest(ratingSchema, "body"), addRating)
 
-router.delete("/:id",authMiddleware, isAdmin, deleteProduct)//done
-
-router.post("/:id/rating",authMiddleware, addRating)//done
-
-export default router;
+export default router
