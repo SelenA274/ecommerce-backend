@@ -33,6 +33,7 @@ export const createOrder = async (req, res) => {
   }
 
   if (!shippingAddress.fullName || !shippingAddress.phone || !shippingAddress.country || !shippingAddress.city) {
+    console.log("shippingAddress:", shippingAddress)
     return res.status(400).json({
       status: 400,
       message: "Missing shipping address fields",
@@ -55,7 +56,7 @@ export const createOrder = async (req, res) => {
       data: order
     })
   } catch (error) {
-    // console.log("the error issss : ", error)
+    console.log("the error issss : ", error)
     return res.status(500).json({
       status: 500,
       message: "Failed to create order",

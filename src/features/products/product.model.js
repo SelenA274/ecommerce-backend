@@ -40,16 +40,16 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true,
         enum: {
-            values: [
+          values: [
               "electronics",
               "food",
               "beauty",
               "sports",
               "books",
-              "toys"
-            ],
-            message: "{VALUE} is not a valid category"
-          }    },
+              "toys",
+              "clothing"  // ✅
+          ],
+        }    },
     images:{
         type: [String],
         required: true,

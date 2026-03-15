@@ -13,11 +13,18 @@ export const getCart = async (req, res) => {
                 data: { items: [] }
             })
         }
+        const totalPrice = cart.items
+        .filter(item => item.product && item.product.isActive)
+        .reduce((sum, item) => sum + item.product.price * item.quantity, 0)
 
         res.status(200).json({
             status: 200,
             message: "Cart fetched successfully",
-            data: cart,
+            data: {
+                ...cart.toObject(),
+                totalPrice: parseFloat(totalPrice.toFixed(2)),
+                itemCount: cart.items.length
+            }
         })
     } catch (error) {
         return res.status(500).json({
@@ -124,9 +131,25 @@ export const updateProductQty = async (req, res) => {
             })
         }
 
+        const qty = Number(quantity)
+        if (!qty || qty < 1) {
+          return res.status(400).json({ 
+            message: "quantity must be >= 1" 
+          })
+        }
+
+        const product = await Product.findById(productId).select("stock isActive")
+
+        if (qty > product.stock) {
+           return res.status(400).json({
+                status: 400,
+                message: `Not enough stock. Available: ${product.stock}`,
+                data: null
+            })
+        }
+
         item.quantity = quantity
         await cart.save()
-
         res.status(200).json({
             status: 200,
             message: "Product quantity updated successfully",
@@ -218,22 +241,28 @@ export const syncCart = async (req, res) => {
         let cart = await Cart.findOne({ userId })
         if (!cart) cart = await Cart.create({ userId, items: [] })
 
-        for (const it of items) {
-            const productId = it.product
-            const qty = Number(it.quantity)
-
-            if (!productId || !qty || qty < 1) continue
-
-            const exist = cart.items.find((x) => String(x.product) === String(productId))
-            if (exist) {
-                exist.quantity += qty
-            } else {
-                cart.items.push({ product: productId, quantity: qty })
+            for (const it of items) {
+                const productId = it.product
+                const qty = Number(it.quantity)
+            
+                if (!productId || !qty || qty < 1) continue
+            
+                const product = await Product.findById(productId).select("stock isActive")
+                if (!product || !product.isActive) continue
+            
+                const exist = cart.items.find((x) => String(x.product) === String(productId))
+                const currentQty = exist ? exist.quantity : 0
+            
+                if (currentQty + qty > product.stock) continue
+            
+                if (exist) {
+                    exist.quantity += qty
+                } else {
+                    cart.items.push({ product: productId, quantity: qty })
+                }
             }
-        }
 
         await cart.save()
-
         return res.status(200).json({
             status: 200,
             message: "Cart synced successfully",

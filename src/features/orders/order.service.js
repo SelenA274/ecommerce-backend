@@ -31,28 +31,28 @@ export const createOrderService  = async ({ userId, items, shippingAddress, paym
         quantity: item.quantity
     })
 
-    totalItemsPrice += product.price * item.quantity
+    totalItemsPrice += (product.price * item.quantity).toFixed(2)
     product.stock -= item.quantity
     await product.save()
-}
+    }
 
-const totalPrice = totalItemsPrice + Number(shippingCost || 0)
+    const totalPrice = totalItemsPrice + Number(shippingCost || 0)
 
-const createdOrder = await Order.create({
-    userId, items: orderItems, shippingAddress,
-    totalPrice, shippingCost, paymentMethod,
-    paymentStatus: "pending", orderStatus: "pending",
-    notes: notes || ""
-})
+    const createdOrder = await Order.create({
+        userId, items: orderItems, shippingAddress,
+        totalPrice, shippingCost, paymentMethod,
+        paymentStatus: "pending", orderStatus: "pending",
+        notes: notes || ""
+    })
 
 // Socket.IO events
-io.emit("order-created", { orderId: createdOrder._id })
-for (const item of orderItems) {
-    const updatedProduct = await Product.findById(item.product)
-    io.to(String(item.product)).emit("stock-updated", { productId: item.product, newStock: updatedProduct.stock })
-    if (updatedProduct.stock === 0)
-        io.to(String(item.product)).emit("product-out-of-stock", { productId: item.product })
-}
+    io.emit("order-created", { orderId: createdOrder._id })
+    for (const item of orderItems) {
+        const updatedProduct = await Product.findById(item.product)
+        io.to(String(item.product)).emit("stock-updated", { productId: item.product, newStock: updatedProduct.stock })
+        if (updatedProduct.stock === 0)
+            io.to(String(item.product)).emit("product-out-of-stock", { productId: item.product })
+    }
 return createdOrder
 }
 
