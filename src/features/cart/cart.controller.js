@@ -31,12 +31,12 @@ export const getCart = async (req, res) => {
 export const addProductToCart = async (req, res) => {
     try {
         const userId = req.user.id
-        const { productID, quantity = 1 } = req.body
+        const { productId, quantity = 1 } = req.body
 
-        if (!productID) {
+        if (!productId) {
             return res.status(400).json({
                 status: 400,
-                message: "productID is required",
+                message: "productId is required",
                 data: null,
             })
         }
@@ -50,7 +50,7 @@ export const addProductToCart = async (req, res) => {
             })
         }
 
-        const product = await Product.findById(productID).select("name price stock isActive")
+        const product = await Product.findById(productId).select("name price stock isActive")
         if (!product || product.isActive === false) {
             return res.status(404).json({
                 status: 404,
@@ -64,21 +64,34 @@ export const addProductToCart = async (req, res) => {
             cart = await Cart.create({ userId, items: [] })
         }
 
-        const item = cart.items.find((i) => String(i.product) === String(productID))
+        const item = cart.items.find((i) => String(i.product) === String(productId))
+
+        const currentQty = item ? item.quantity : 0
+        const totalQty = currentQty + qty
+
+        if (totalQty > product.stock) {
+            return res.status(400).json({
+                status: 404,
+                message: `Not enough stock. Available: ${product.stock}`,
+                data: null
+
+            })
+        }
+//success-------------------------
         if (item) {
             item.quantity = item.quantity + qty
         } else {
-            cart.items.push({ product: productID, quantity: qty })
+            cart.items.push({ product: productId, quantity: qty })
         }
-
         await cart.save()
-
         res.status(200).json({
             status: 200,
             message: "Product added successfully",
             data: cart,
         })
+
     } catch (error) {
+        console.log(error)
         return res.status(500).json({
             status: 500,
             message: "Failed to add product to cart",

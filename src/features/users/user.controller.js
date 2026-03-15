@@ -84,7 +84,7 @@ export const deleteAddress = async (req, res) => {
       await deleteAddressService({ userId: req.user.id, addrId: req.params.addrId })
       res.status(200).json({
         status: 200,
-        message: `User with id: ${req.params.id} deleted successfully`,
+        message: `User with id: ${req.params.addrId} deleted successfully`,
         data: null
     })
 
