@@ -1,0 +1,166 @@
+import { 
+  createOrderService,
+  getMyOrdersService,
+  getOrderByIdService,
+  getAllOrdersService,
+  updateOrderStatusService,
+  cancelOrderService
+} from "./order.service.js"
+import { Request, Response } from "express";
+
+export const createOrder =  async (req: Request, res: Response) => {
+  const {
+    items,
+    shippingAddress,
+    paymentMethod,
+    notes,
+    shippingCost
+  } = req.body
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({
+      status: 400,
+      message: "items is required",
+      data: null
+    })
+  }
+
+  if (!paymentMethod) {
+    return res.status(400).json({
+      status: 400,
+      message: "paymentMethod is required",
+      data: null
+    })
+  }
+
+  if (!shippingAddress.fullName || !shippingAddress.phone || !shippingAddress.country || !shippingAddress.city) {
+    console.log("shippingAddress:", shippingAddress)
+    return res.status(400).json({
+      status: 400,
+      message: "Missing shipping address fields",
+      data: null
+    })
+  }
+
+  try {
+    const order = await createOrderService({ 
+      userId: req.user!.id, 
+      items, shippingAddress, 
+      paymentMethod, 
+      notes, 
+      shippingCost 
+    })
+
+    return res.status(201).json({
+      status: 201,
+      message: "Order created successfully",
+      data: order
+    })
+  } catch (error) {
+    console.log("the error issss : ", error)
+    return res.status(500).json({
+      status: 500,
+      message: "Failed to create order",
+      data: null
+    })
+  }
+}
+
+export const getMyOrders =  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const data = await getMyOrdersService({ userId: req.user!.id })
+
+        if (!data) {
+            res.status(200).json({ 
+                status: 200, 
+                message: "0 items", 
+                data: {} 
+            })
+        }
+        res.status(201).json({
+            status: 201,
+            data: data
+        })
+
+    } catch (error) {
+        res.status(500).json({
+            status: 500,
+            message: "Failed to fetch orders",
+            data: null
+          })
+    }
+}
+
+
+export const getOrderById =async (req: Request, res: Response): Promise<void> => {
+  try {
+    const order = await getOrderByIdService({ id: String(req.params.id) })
+     res.status(200).json({
+     status: 200,
+     message: "order fetched successfully",
+     data: order,
+   })
+ } catch (error) {
+  //  console.log("error : ",error)
+   res.status(500).json({
+     status: 500,
+     message: "Error fetching order",
+     data: null,
+   })
+ }
+}
+
+export const getAllOrders = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const orders = await getAllOrdersService()
+    res.status(200).json({
+      status: 200,
+      message: "All orders fetched successfully",
+      count: orders.length,
+      data: orders
+    })
+  } catch (error) {
+    const err = error as { message?: string }
+    res.status(500).json({
+        status: 500,
+        message: "Error fetching all orders",
+        error: err.message
+    })
+  }
+}
+
+
+export const updateOrderStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const order = await updateOrderStatusService({ 
+      id: String(req.params.id), 
+      orderStatus: req.body.orderStatus, 
+      trackingNumber: req.body.trackingNumber })
+
+    res.status(200).json({
+      status: 200,
+      message: "Order status updated",
+      data: order
+    })
+  } catch (error) {
+    res.status(500).json({
+      status: 500,
+      message: "Error updating orders",
+    })
+  }
+}
+export const cancelOrder = async (req: Request, res: Response): Promise<void> => {
+  try {
+    await cancelOrderService({ id: String(req.params.id) })
+    res.status(200).json({ 
+      status: 200, 
+      message: "Order deleted permanently and stock restored" 
+    })
+
+  } catch (error) {
+    res.status(500).json({
+      status: 500,
+      message: "Error cancel order",
+    })
+  }
+}
