@@ -21,7 +21,7 @@ export const authMiddleware = async (
       userId: string;
       role: string;
     };
-    req.user = { id: decoded.userId };
+    req.user = { id: decoded.userId, role: decoded.role };
     next();
   } catch (error) {
     const err = error as { name: string };
