@@ -66,29 +66,21 @@ export const createOrder =  async (req: Request, res: Response) => {
   }
 }
 
-export const getMyOrders =  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const data = await getMyOrdersService({ userId: req.user!.id })
-
-        if (!data) {
-            res.status(200).json({ 
-                status: 200, 
-                message: "0 items", 
-                data: {} 
-            })
-        }
-        res.status(201).json({
-            status: 201,
-            data: data
-        })
-
-    } catch (error) {
-        res.status(500).json({
-            status: 500,
-            message: "Failed to fetch orders",
-            data: null
-          })
-    }
+export const getMyOrders = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const data = await getMyOrdersService({ userId: req.user!.id })
+    res.status(200).json({
+      status: 200,
+      message: "Orders fetched successfully",
+      data: data || []
+    })
+  } catch (error) {
+    res.status(500).json({
+      status: 500,
+      message: "Failed to fetch orders",
+      data: null
+    })
+  }
 }
 
 

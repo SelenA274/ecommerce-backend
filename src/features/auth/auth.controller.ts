@@ -133,6 +133,7 @@ export const adminVerify2fa = async (req: Request, res: Response): Promise<void>
       data: { token } 
     });
   } catch (error) {
+    // console.log("error : ", error)
     res.status(500).json({ 
       status: 500, 
       message: "Failed verify 2FA", 
