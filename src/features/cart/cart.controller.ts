@@ -1,11 +1,12 @@
 import { Cart } from "./cart.model.js";
 import { Product } from "../products/product.model.js";
+import { getTotalStock } from "../products/product.utils.js";
 import { Request, Response } from "express";
 
 export const getCart = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.user!.id
-        const cart = await Cart.findOne({ userId }).populate("items.product", "name price images stock isActive")
+        const cart = await Cart.findOne({ userId }).populate("items.product", "name price images mainImage variants isActive")
         
         if (!cart) {
              res.status(200).json({
@@ -59,7 +60,7 @@ export const addProductToCart = async (req: Request, res: Response): Promise<voi
             })
         }
 
-        const product = await Product.findById(productId).select("name price stock isActive")
+        const product = await Product.findById(productId).select("name price variants isActive")
         if (!product || product.isActive === false) {
              res.status(404).json({
                 status: 404,
@@ -79,10 +80,12 @@ export const addProductToCart = async (req: Request, res: Response): Promise<voi
         const currentQty = item ? item.quantity : 0
         const totalQty = currentQty + qty
 
-        if (totalQty > product.stock) {
+        const availableStock = getTotalStock(product);
+
+        if (totalQty > availableStock) {
             res.status(400).json({
                 status: 404,
-                message: `Not enough stock. Available: ${product.stock}`,
+                message: `Not enough stock. Available: ${availableStock}`,
                 data: null
             })
         }
@@ -143,16 +146,18 @@ export const updateProductQty = async (req: Request, res: Response): Promise<voi
           })
         }
 
-        const product = await Product.findById(productId).select("stock isActive")
+        const product = await Product.findById(productId).select("variants isActive")
         if (!product) {
             res.status(404).json({ status: 404, message: "Product not found", data: null })
             return
         }
 
-        if (qty > product.stock) {
+        const availableStock = getTotalStock(product);
+
+        if (qty > availableStock) {
             res.status(400).json({
                 status: 400,
-                message: `Not enough stock. Available: ${product.stock}`,
+                message: `Not enough stock. Available: ${availableStock}`,
                 data: null
             })
         }
@@ -258,13 +263,14 @@ export const syncCart = async (req: Request, res: Response): Promise<void> => {
             
                 if (!productId || !qty || qty < 1) continue
             
-                const product = await Product.findById(productId).select("stock isActive")
+                const product = await Product.findById(productId).select("variants isActive")
                 if (!product || !product.isActive) continue
             
                 const exist = cart.items.find((x) => String(x.product) === String(productId))
                 const currentQty = exist ? exist.quantity : 0
+                const availableStock = getTotalStock(product);
             
-                if (currentQty + qty > product.stock) continue
+                if (currentQty + qty > availableStock) continue
             
                 if (exist) {
                     exist.quantity += qty

@@ -1,6 +1,6 @@
 import { Product } from "./product.model.js"
 import { uploadToCloudinary } from "./cloudinary.service.js"
-import { IProduct } from "../../types/product.types.js";
+import { IColorVariant, IProduct, ISizeVariant } from "../../types/product.types.js";
 export const getAllProductsService  = async () => {
       return await Product.find({ isActive: true }).sort({ createdAt: -1 }); 
   }
@@ -15,34 +15,84 @@ export const getProductByIdService  = async ({ id }: {id: string}) => {
     return product
   }
 
-export const getProductByCategoryService  = async ({ category }:{category: string}) => {
-    const products = await Product.find({ category: category.toLowerCase() })
-    if (!products.length) throw {
-        status: 404,
-        message: "No products found for this category"
-    }
-    return products
-}
+export const getProductByCategoryService = async ({
+  category,
+}: {
+  category: string;
+}) => {
+  const normalized = category.toLowerCase();
+  const products = await Product.find({
+    isActive: true,
+    $or: [{ department: normalized }, { subcategory: normalized }],
+  }).sort({ createdAt: -1 });
 
-export const createNewProductService = async ({ name, description, price, category, stock, file }:{ name: string;description: string; price: number; category: string; stock: number; file?: Express.Multer.File; }) => {
-    let imageUrl: string | null = null;
-    let imagePublicId: string | null = null;
-  
-    if (file) {
-      const result = await uploadToCloudinary(file.buffer) as { secure_url: string; public_id: string };
-      imageUrl = result.secure_url;
-      imagePublicId = result.public_id;
-    }
-    return await Product.create({ 
-        name, 
-        description, 
-        price, 
-        category, 
-        stock,
-        images: imageUrl ? [imageUrl] : [],
-        imagePublicId
-    })
-}
+  if (!products.length) {
+    throw {
+      status: 404,
+      message: "No products found for this category",
+    };
+  }
+  return products;
+};
+
+export const createNewProductService = async ({
+  name,
+  brand,
+  description,
+  price,
+  department,
+  subcategory,
+  mainImage,
+  images,
+  variantKind,
+  variants,
+  file,
+}: {
+  name: string;
+  brand: string;
+  description: string;
+  price: number;
+  department: string;
+  subcategory: string;
+  mainImage?: string;
+  images?: string[];
+  variantKind: string;
+  variants: IColorVariant[] | ISizeVariant[];
+  file?: Express.Multer.File;
+}) => {
+  let imageUrl = mainImage ?? null;
+  let imagePublicId: string | null = null;
+
+  if (file) {
+    const result = (await uploadToCloudinary(file.buffer)) as {
+      secure_url: string;
+      public_id: string;
+    };
+    imageUrl = result.secure_url;
+    imagePublicId = result.public_id;
+  }
+
+  if (!imageUrl) {
+    throw {
+      status: 400,
+      message: "mainImage or product image file is required",
+    };
+  }
+
+  return await Product.create({
+    name,
+    brand,
+    description,
+    price,
+    department,
+    subcategory,
+    mainImage: imageUrl,
+    images: images?.length ? images : [imageUrl],
+    imagePublicId,
+    variantKind,
+    variants,
+  });
+};
 
 
 export const updateProductService = async({ id, data }: { id: string; data:Partial<IProduct>; }) =>{

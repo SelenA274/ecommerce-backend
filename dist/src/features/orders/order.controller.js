@@ -49,16 +49,10 @@ export const createOrder = async (req, res) => {
 export const getMyOrders = async (req, res) => {
     try {
         const data = await getMyOrdersService({ userId: req.user.id });
-        if (!data) {
-            res.status(200).json({
-                status: 200,
-                message: "0 items",
-                data: {}
-            });
-        }
-        res.status(201).json({
-            status: 201,
-            data: data
+        res.status(200).json({
+            status: 200,
+            message: "Orders fetched successfully",
+            data: data || []
         });
     }
     catch (error) {

@@ -34,7 +34,7 @@ export const loginService = async ({ email, password, }) => {
         throw { status: 400, message: "User is not verified" };
     const token = jwt.sign({ userId: user._id,
         role: user.role
-    }, process.env.JWT_SECRET, { expiresIn: "30m" });
+    }, process.env.JWT_SECRET, { expiresIn: "7d" });
     return token;
 };
 export const forgotPasswordService = async ({ email }) => {

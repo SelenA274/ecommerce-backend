@@ -61,8 +61,31 @@ export const getProductByCategory = async (req: Request, res: Response): Promise
 
   export const createNewProduct = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { name, description, price, category, stock } = req.body
-      const product = await createNewProductService({ name, description, price, category, stock, file: req.file })
+      const {
+        name,
+        brand,
+        description,
+        price,
+        department,
+        subcategory,
+        mainImage,
+        images,
+        variantKind,
+        variants,
+      } = req.body
+      const product = await createNewProductService({
+        name,
+        brand,
+        description,
+        price,
+        department,
+        subcategory,
+        mainImage,
+        images,
+        variantKind,
+        variants,
+        file: req.file,
+      })
 
         res.status(201).json({
             status: 201,

@@ -12,31 +12,46 @@ export const getProductByIdService = async ({ id }) => {
         };
     return product;
 };
-export const getProductByCategoryService = async ({ category }) => {
-    const products = await Product.find({ category: category.toLowerCase() });
-    if (!products.length)
+export const getProductByCategoryService = async ({ category, }) => {
+    const normalized = category.toLowerCase();
+    const products = await Product.find({
+        isActive: true,
+        $or: [{ department: normalized }, { subcategory: normalized }],
+    }).sort({ createdAt: -1 });
+    if (!products.length) {
         throw {
             status: 404,
-            message: "No products found for this category"
+            message: "No products found for this category",
         };
+    }
     return products;
 };
-export const createNewProductService = async ({ name, description, price, category, stock, file }) => {
-    let imageUrl = null;
+export const createNewProductService = async ({ name, brand, description, price, department, subcategory, mainImage, images, variantKind, variants, file, }) => {
+    let imageUrl = mainImage ?? null;
     let imagePublicId = null;
     if (file) {
-        const result = await uploadToCloudinary(file.buffer);
+        const result = (await uploadToCloudinary(file.buffer));
         imageUrl = result.secure_url;
         imagePublicId = result.public_id;
     }
+    if (!imageUrl) {
+        throw {
+            status: 400,
+            message: "mainImage or product image file is required",
+        };
+    }
     return await Product.create({
         name,
+        brand,
         description,
         price,
-        category,
-        stock,
-        images: imageUrl ? [imageUrl] : [],
-        imagePublicId
+        department,
+        subcategory,
+        mainImage: imageUrl,
+        images: images?.length ? images : [imageUrl],
+        imagePublicId,
+        variantKind,
+        variants,
     });
 };
 export const updateProductService = async ({ id, data }) => {

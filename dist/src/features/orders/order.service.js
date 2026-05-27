@@ -1,5 +1,6 @@
 import Order from "./order.model.js";
 import Product from "../products/product.model.js";
+import { deductProductStock, getTotalStock, restoreProductStock, } from "../products/product.utils.js";
 import { io } from "../../../server.js";
 export const createOrderService = async ({ userId, items, shippingAddress, paymentMethod, notes, shippingCost = 0 }) => {
     let totalItemsPrice = 0;
@@ -16,7 +17,7 @@ export const createOrderService = async ({ userId, items, shippingAddress, payme
                 status: 404,
                 message: "Product not found"
             };
-        if (product.stock < item.quantity)
+        if (getTotalStock(product) < item.quantity)
             throw {
                 status: 400,
                 message: "Not enough stock"
@@ -25,10 +26,11 @@ export const createOrderService = async ({ userId, items, shippingAddress, payme
             product: product._id,
             name: product.name,
             price: product.price,
-            quantity: item.quantity
+            quantity: item.quantity,
+            image: product.mainImage,
         });
         totalItemsPrice += (product.price * item.quantity);
-        product.stock -= item.quantity;
+        deductProductStock(product, item.quantity);
         await product.save();
     }
     const totalPrice = totalItemsPrice + Number(shippingCost || 0);
@@ -44,8 +46,8 @@ export const createOrderService = async ({ userId, items, shippingAddress, payme
         const updatedProduct = await Product.findById(item.product);
         if (!updatedProduct)
             continue;
-        io.to(String(item.product)).emit("stock-updated", { productId: item.product, newStock: updatedProduct.stock });
-        if (updatedProduct.stock === 0)
+        io.to(String(item.product)).emit("stock-updated", { productId: item.product, newStock: getTotalStock(updatedProduct) });
+        if (getTotalStock(updatedProduct) === 0)
             io.to(String(item.product)).emit("product-out-of-stock", { productId: item.product });
     }
     return createdOrder;
@@ -108,9 +110,11 @@ export const cancelOrderService = async ({ id }) => {
             message: "Order not found"
         };
     for (const item of order.items) {
-        await Product.findByIdAndUpdate(item.product, {
-            $inc: { stock: item.quantity }
-        });
+        const product = await Product.findById(item.product);
+        if (!product)
+            continue;
+        restoreProductStock(product, item.quantity);
+        await product.save();
     }
     if (order.orderStatus !== "pending")
         throw {
