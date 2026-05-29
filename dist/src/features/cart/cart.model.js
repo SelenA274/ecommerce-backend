@@ -14,7 +14,12 @@ export const cartSchema = new mongoose.Schema({
             quantity: {
                 type: Number,
                 default: 1
-            }
+            },
+            variant: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Product.variants",
+                required: false,
+            },
         }
     ]
 });

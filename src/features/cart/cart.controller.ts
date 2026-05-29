@@ -41,7 +41,7 @@ export const getCart = async (req: Request, res: Response): Promise<void> => {
 export const addProductToCart = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.user!.id
-        const { productId, quantity = 1 } = req.body
+        const { productId, quantity = 1, variantId } = req.body
 
         if (!productId) {
              res.status(400).json({
@@ -75,12 +75,32 @@ export const addProductToCart = async (req: Request, res: Response): Promise<voi
             cart = await Cart.create({ userId, items: [] })
         }
 
-        const item = cart.items.find((i) => String(i.product) === String(productId))
+        const item = cart.items.find(
+            (i) =>
+                String(i.product) === String(productId) &&
+                String(i.variant ?? "") === String(variantId ?? "")
+        )
 
         const currentQty = item ? item.quantity : 0
         const totalQty = currentQty + qty
 
-        const availableStock = getTotalStock(product);
+        let availableStock: number
+        if (variantId) {
+            const variant = product.variants.find(
+                (v) => String(v._id) === String(variantId)
+            )
+            if (!variant) {
+                res.status(404).json({
+                    status: 404,
+                    message: "Variant not found",
+                    data: null,
+                })
+                return
+            }
+            availableStock = variant.stock
+        } else {
+            availableStock = getTotalStock(product)
+        }
 
         if (totalQty > availableStock) {
             res.status(400).json({
@@ -88,12 +108,18 @@ export const addProductToCart = async (req: Request, res: Response): Promise<voi
                 message: `Not enough stock. Available: ${availableStock}`,
                 data: null
             })
+            return
         }
 //success-------------------------
         if (item) {
             item.quantity = item.quantity + qty
         } else {
-            cart.items.push({ product: productId, quantity: qty })
+            const newItem: { product: string; quantity: number; variant?: string } = {
+                product: productId,
+                quantity: qty,
+            }
+            if (variantId) newItem.variant = variantId
+            cart.items.push(newItem as any)
         }
         await cart.save()
         res.status(200).json({
@@ -152,7 +178,23 @@ export const updateProductQty = async (req: Request, res: Response): Promise<voi
             return
         }
 
-        const availableStock = getTotalStock(product);
+        let availableStock: number
+        if (item.variant) {
+            const variant = product.variants.find(
+                (v) => String(v._id) === String(item.variant)
+            )
+            if (!variant) {
+                res.status(404).json({
+                    status: 404,
+                    message: "Variant not found",
+                    data: null,
+                })
+                return
+            }
+            availableStock = variant.stock
+        } else {
+            availableStock = getTotalStock(product)
+        }
 
         if (qty > availableStock) {
             res.status(400).json({
@@ -160,6 +202,7 @@ export const updateProductQty = async (req: Request, res: Response): Promise<voi
                 message: `Not enough stock. Available: ${availableStock}`,
                 data: null
             })
+            return
         }
 
         item.quantity = quantity
@@ -258,7 +301,8 @@ export const syncCart = async (req: Request, res: Response): Promise<void> => {
         if (!cart) cart = await Cart.create({ userId, items: [] })
 
             for (const it of items) {
-                const productId = it.product
+                const productId = it.productId ?? it.product
+                const variantId = it.variantId
                 const qty = Number(it.quantity)
             
                 if (!productId || !qty || qty < 1) continue
@@ -266,16 +310,35 @@ export const syncCart = async (req: Request, res: Response): Promise<void> => {
                 const product = await Product.findById(productId).select("variants isActive")
                 if (!product || !product.isActive) continue
             
-                const exist = cart.items.find((x) => String(x.product) === String(productId))
+                const exist = cart.items.find(
+                    (x) =>
+                        String(x.product) === String(productId) &&
+                        String(x.variant ?? "") === String(variantId ?? "")
+                )
                 const currentQty = exist ? exist.quantity : 0
-                const availableStock = getTotalStock(product);
+
+                let availableStock: number
+                if (variantId) {
+                    const variant = product.variants.find(
+                        (v) => String(v._id) === String(variantId)
+                    )
+                    if (!variant) continue
+                    availableStock = variant.stock
+                } else {
+                    availableStock = getTotalStock(product)
+                }
             
                 if (currentQty + qty > availableStock) continue
             
                 if (exist) {
                     exist.quantity += qty
                 } else {
-                    cart.items.push({ product: productId, quantity: qty })
+                    const newItem: { product: string; quantity: number; variant?: string } = {
+                        product: productId,
+                        quantity: qty,
+                    }
+                    if (variantId) newItem.variant = variantId
+                    cart.items.push(newItem as any)
                 }
             }
 

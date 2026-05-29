@@ -9,6 +9,7 @@ export interface ICartItem {
     isActive?: boolean;
   };
   quantity: number;
+  variant?: Types.ObjectId;
 }
 
 export interface ICart extends Document {

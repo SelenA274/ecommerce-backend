@@ -2,9 +2,7 @@ import Joi from "joi";
 import { ALL_SUBCATEGORIES, DEPARTMENTS, VARIANT_KINDS, } from "./product.constants.js";
 const colorVariantSchema = Joi.object({
     colorName: Joi.string().min(1).max(100).required(),
-    colorCode: Joi.string()
-        .pattern(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
-        .required(),
+    colorCode: Joi.string().pattern(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).required(),
     stock: Joi.number().integer().min(0).required(),
     sku: Joi.string().max(50),
 });
@@ -19,17 +17,11 @@ export const createProductSchema = Joi.object({
     brand: Joi.string().min(1).max(100).required(),
     description: Joi.string().min(10).max(2000).required(),
     price: Joi.number().positive().required(),
-    department: Joi.string()
-        .valid(...DEPARTMENTS)
-        .required(),
-    subcategory: Joi.string()
-        .valid(...ALL_SUBCATEGORIES)
-        .required(),
+    department: Joi.string().valid(...DEPARTMENTS).required(),
+    subcategory: Joi.string().valid(...ALL_SUBCATEGORIES).required(),
     mainImage: Joi.string().uri().required(),
     images: Joi.array().items(Joi.string().uri()).min(1),
-    variantKind: Joi.string()
-        .valid(...VARIANT_KINDS)
-        .required(),
+    variantKind: Joi.string().valid(...VARIANT_KINDS).required(),
     variants: Joi.when("variantKind", {
         is: "color",
         then: Joi.array().items(colorVariantSchema).min(1).required(),
