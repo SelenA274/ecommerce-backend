@@ -6,31 +6,40 @@ import { Request, Response } from "express";
 export const getCart = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.user!.id
-        const cart = await Cart.findOne({ userId }).populate("items.product", "name price images mainImage variants isActive")
-        
+        const cart = await Cart.findOne({ userId })
+            .populate("items.product", "name price images mainImage variants isActive")
+
         if (!cart) {
-             res.status(200).json({
-                status: 200,
-                message: "Cart is empty",
-                data: { items: [] }
-            })
+            res.status(200).json({ status: 200, message: "Cart is empty", data: { items: [] } })
             return
         }
-        const totalPrice = (cart.items as any[])
-        .filter(item => item.product && item.product.isActive)
-        .reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+
+        const itemsWithVariant = (cart.items as any[]).map(item => {
+            const variant = item.variant && item.product?.variants
+                ? item.product.variants.find((v: any) => String(v._id) === String(item.variant))
+                : null
+            return {
+                ...item.toObject(),
+                variant: variant ?? null
+            }
+        })
+
+        const totalPrice = itemsWithVariant
+            .filter(item => item.product && item.product.isActive)
+            .reduce((sum, item) => sum + item.product.price * item.quantity, 0)
 
         res.status(200).json({
             status: 200,
             message: "Cart fetched successfully",
             data: {
                 ...cart.toObject(),
+                items: itemsWithVariant,
                 totalPrice: parseFloat(totalPrice.toFixed(2)),
                 itemCount: cart.items.length
             }
         })
     } catch (error) {
-         res.status(500).json({
+        res.status(500).json({
             status: 500,
             message: "Error fetching cart",
             data: null,
@@ -44,7 +53,7 @@ export const addProductToCart = async (req: Request, res: Response): Promise<voi
         const { productId, quantity = 1, variantId } = req.body
 
         if (!productId) {
-             res.status(400).json({
+            res.status(400).json({
                 status: 400,
                 message: "productId is required",
                 data: null,
@@ -53,7 +62,7 @@ export const addProductToCart = async (req: Request, res: Response): Promise<voi
 
         const qty = Number(quantity)
         if (!qty || qty < 1) {
-             res.status(400).json({
+            res.status(400).json({
                 status: 400,
                 message: "quantity must be >= 1",
                 data: null,
@@ -62,7 +71,7 @@ export const addProductToCart = async (req: Request, res: Response): Promise<voi
 
         const product = await Product.findById(productId).select("name price variants isActive")
         if (!product || product.isActive === false) {
-             res.status(404).json({
+            res.status(404).json({
                 status: 404,
                 message: "Product not found",
                 data: null,
@@ -110,7 +119,7 @@ export const addProductToCart = async (req: Request, res: Response): Promise<voi
             })
             return
         }
-//success-------------------------
+        //success-------------------------
         if (item) {
             item.quantity = item.quantity + qty
         } else {
@@ -167,9 +176,9 @@ export const updateProductQty = async (req: Request, res: Response): Promise<voi
 
         const qty = Number(quantity)
         if (!qty || qty < 1) {
-            res.status(400).json({ 
-            message: "quantity must be >= 1" 
-          })
+            res.status(400).json({
+                message: "quantity must be >= 1"
+            })
         }
 
         const product = await Product.findById(productId).select("variants isActive")
@@ -245,7 +254,7 @@ export const deleteProduct = async (req: Request, res: Response): Promise<void> 
             data: null,
         })
     } catch (error) {
-         res.status(500).json({
+        res.status(500).json({
             status: 500,
             message: "Failed to remove product",
             data: null,
@@ -259,7 +268,7 @@ export const clearCart = async (req: Request, res: Response): Promise<void> => {
         const cart = await Cart.findOne({ userId })
 
         if (!cart) {
-             res.status(404).json({
+            res.status(404).json({
                 status: 404,
                 message: "Cart not found",
                 data: null,
@@ -300,47 +309,47 @@ export const syncCart = async (req: Request, res: Response): Promise<void> => {
         let cart = await Cart.findOne({ userId })
         if (!cart) cart = await Cart.create({ userId, items: [] })
 
-            for (const it of items) {
-                const productId = it.productId ?? it.product
-                const variantId = it.variantId
-                const qty = Number(it.quantity)
-            
-                if (!productId || !qty || qty < 1) continue
-            
-                const product = await Product.findById(productId).select("variants isActive")
-                if (!product || !product.isActive) continue
-            
-                const exist = cart.items.find(
-                    (x) =>
-                        String(x.product) === String(productId) &&
-                        String(x.variant ?? "") === String(variantId ?? "")
-                )
-                const currentQty = exist ? exist.quantity : 0
+        for (const it of items) {
+            const productId = it.productId ?? it.product
+            const variantId = it.variantId
+            const qty = Number(it.quantity)
 
-                let availableStock: number
-                if (variantId) {
-                    const variant = product.variants.find(
-                        (v) => String(v._id) === String(variantId)
-                    )
-                    if (!variant) continue
-                    availableStock = variant.stock
-                } else {
-                    availableStock = getTotalStock(product)
-                }
-            
-                if (currentQty + qty > availableStock) continue
-            
-                if (exist) {
-                    exist.quantity += qty
-                } else {
-                    const newItem: { product: string; quantity: number; variant?: string } = {
-                        product: productId,
-                        quantity: qty,
-                    }
-                    if (variantId) newItem.variant = variantId
-                    cart.items.push(newItem as any)
-                }
+            if (!productId || !qty || qty < 1) continue
+
+            const product = await Product.findById(productId).select("variants isActive")
+            if (!product || !product.isActive) continue
+
+            const exist = cart.items.find(
+                (x) =>
+                    String(x.product) === String(productId) &&
+                    String(x.variant ?? "") === String(variantId ?? "")
+            )
+            const currentQty = exist ? exist.quantity : 0
+
+            let availableStock: number
+            if (variantId) {
+                const variant = product.variants.find(
+                    (v) => String(v._id) === String(variantId)
+                )
+                if (!variant) continue
+                availableStock = variant.stock
+            } else {
+                availableStock = getTotalStock(product)
             }
+
+            if (currentQty + qty > availableStock) continue
+
+            if (exist) {
+                exist.quantity += qty
+            } else {
+                const newItem: { product: string; quantity: number; variant?: string } = {
+                    product: productId,
+                    quantity: qty,
+                }
+                if (variantId) newItem.variant = variantId
+                cart.items.push(newItem as any)
+            }
+        }
 
         await cart.save()
         res.status(200).json({
