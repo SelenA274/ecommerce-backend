@@ -54,6 +54,7 @@ export const getProductByCategory = async (req, res) => {
 export const createNewProduct = async (req, res) => {
     try {
         const { name, brand, description, price, department, subcategory, mainImage, images, variantKind, variants, } = req.body;
+        const uploadedFiles = req.files;
         const product = await createNewProductService({
             name,
             brand,
@@ -65,7 +66,8 @@ export const createNewProduct = async (req, res) => {
             images,
             variantKind,
             variants,
-            file: req.file,
+            file: req.file ?? uploadedFiles?.image?.[0],
+            files: uploadedFiles?.images,
         });
         res.status(201).json({
             status: 201,
@@ -74,7 +76,7 @@ export const createNewProduct = async (req, res) => {
         });
     }
     catch (error) {
-        // console.log("error : ", error)
+        console.log("error : ", error);
         res.status(500).json({
             status: 500,
             message: "Failed to create product",

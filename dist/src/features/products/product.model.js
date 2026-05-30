@@ -78,7 +78,14 @@ const productSchema = new mongoose.Schema({
         enum: { values: VARIANT_KINDS },
     },
     variants: {
-        type: [mongoose.Schema.Types.Mixed],
+        type: [new mongoose.Schema({
+                colorName: String,
+                colorCode: String,
+                sizeLabel: String,
+                stock: { type: Number, required: true, default: 0 },
+                sku: String,
+                price: Number,
+            }, { _id: true })],
         required: true,
         validate: {
             validator(value) {

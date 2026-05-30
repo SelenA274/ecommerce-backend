@@ -8,12 +8,10 @@ export declare const getAllProductsService: () => Promise<(import("mongoose").Do
 })[]>;
 export declare const getProductByIdService: ({ id }: {
     id: string;
-}) => Promise<import("mongoose").Document<unknown, {}, IProduct, {}, import("mongoose").DefaultSchemaOptions> & IProduct & Required<{
+}) => Promise<IProduct & Required<{
     _id: import("mongoose").Types.ObjectId;
 }> & {
     __v: number;
-} & {
-    id: string;
 }>;
 export declare const getProductByCategoryService: ({ category, }: {
     category: string;
@@ -24,7 +22,7 @@ export declare const getProductByCategoryService: ({ category, }: {
 } & {
     id: string;
 })[]>;
-export declare const createNewProductService: ({ name, brand, description, price, department, subcategory, mainImage, images, variantKind, variants, file, }: {
+export declare const createNewProductService: ({ name, brand, description, price, department, subcategory, mainImage, images, variantKind, variants, file, files, }: {
     name: string;
     brand: string;
     description: string;
@@ -36,6 +34,7 @@ export declare const createNewProductService: ({ name, brand, description, price
     variantKind: string;
     variants: IColorVariant[] | ISizeVariant[];
     file?: Express.Multer.File;
+    files?: Express.Multer.File[];
 }) => Promise<import("mongoose").Document<unknown, {}, IProduct, {}, import("mongoose").DefaultSchemaOptions> & IProduct & Required<{
     _id: import("mongoose").Types.ObjectId;
 }> & {

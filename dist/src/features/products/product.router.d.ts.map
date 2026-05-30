@@ -1,1 +1,1 @@
-{"version":3,"file":"product.router.d.ts","sourceRoot":"","sources":["../../../../src/features/products/product.router.ts"],"names":[],"mappings":"AAAA,OAAgB,EAAE,MAAM,EAAE,MAAM,SAAS,CAAA;AAsBzC,QAAA,MAAM,MAAM,EAAE,MAAyB,CAAA;AAWvC,eAAe,MAAM,CAAA"}
+{"version":3,"file":"product.router.d.ts","sourceRoot":"","sources":["../../../../src/features/products/product.router.ts"],"names":[],"mappings":"AAAA,OAAgB,EAAE,MAAM,EAAE,MAAM,SAAS,CAAA;AAuBzC,QAAA,MAAM,MAAM,EAAE,MAAyB,CAAA;AAWvC,eAAe,MAAM,CAAA"}

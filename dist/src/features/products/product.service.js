@@ -4,7 +4,9 @@ export const getAllProductsService = async () => {
     return await Product.find({ isActive: true }).sort({ createdAt: -1 });
 };
 export const getProductByIdService = async ({ id }) => {
-    const product = await Product.findById(id);
+    const product = await Product.findById(id)
+        .populate("ratings.user", "name avatar") // ← أضيفي هاد
+        .lean();
     if (!product)
         throw {
             status: 404,
@@ -26,15 +28,31 @@ export const getProductByCategoryService = async ({ category, }) => {
     }
     return products;
 };
-export const createNewProductService = async ({ name, brand, description, price, department, subcategory, mainImage, images, variantKind, variants, file, }) => {
-    let imageUrl = mainImage ?? null;
+const PLACEHOLDER_IMAGE_URL = "https://placeholder.com";
+export const createNewProductService = async ({ name, brand, description, price, department, subcategory, mainImage, images, variantKind, variants, file, files, }) => {
+    const directImageUrls = images ?? [];
+    const uploadedUrls = [];
+    let mainImageUrl = mainImage;
     let imagePublicId = null;
+    if (files?.length) {
+        for (const uploadedFile of files) {
+            const result = (await uploadToCloudinary(uploadedFile.buffer));
+            uploadedUrls.push(result.secure_url);
+        }
+    }
     if (file) {
         const result = (await uploadToCloudinary(file.buffer));
-        imageUrl = result.secure_url;
         imagePublicId = result.public_id;
+        uploadedUrls.push(result.secure_url);
+        if (!mainImageUrl || mainImageUrl === PLACEHOLDER_IMAGE_URL) {
+            mainImageUrl = result.secure_url;
+        }
     }
-    if (!imageUrl) {
+    const allImages = [...directImageUrls, ...uploadedUrls];
+    if (!mainImageUrl || mainImageUrl === PLACEHOLDER_IMAGE_URL) {
+        mainImageUrl = allImages[0] ?? null;
+    }
+    if (!mainImageUrl) {
         throw {
             status: 400,
             message: "mainImage or product image file is required",
@@ -47,8 +65,8 @@ export const createNewProductService = async ({ name, brand, description, price,
         price,
         department,
         subcategory,
-        mainImage: imageUrl,
-        images: images?.length ? images : [imageUrl],
+        mainImage: mainImageUrl,
+        images: allImages.length ? allImages : [mainImageUrl],
         imagePublicId,
         variantKind,
         variants,
@@ -80,6 +98,7 @@ export const addRatingService = async ({ id, userId, rating, comment }) => {
         comment: comment || ""
     });
     await product.save();
+    await product.populate("ratings.user", "name avatar");
     return product.ratings;
 };
 //# sourceMappingURL=product.service.js.map

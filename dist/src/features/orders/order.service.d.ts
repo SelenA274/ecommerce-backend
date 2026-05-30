@@ -99,19 +99,15 @@ export declare const createOrderService: ({ userId, items, shippingAddress, paym
 }>;
 export declare const getMyOrdersService: ({ userId }: {
     userId: string;
-}) => Promise<{
-    summary: {
-        shippingAddress: {
-            city: string;
-            country: string;
-            fullName: string;
-            phone: string;
-            street?: string | null | undefined;
-        };
-        paymentMethod: "credit" | "paypal" | "simulated";
-        paymentStatus: "pending" | "paid" | "failed";
-    };
-    items: (import("mongoose").Types.Subdocument<import("bson").ObjectId, unknown, {
+}) => Promise<({
+    userId: import("mongoose").Types.ObjectId;
+    items: import("mongoose").Types.DocumentArray<{
+        name: string;
+        product: import("mongoose").Types.ObjectId;
+        quantity: number;
+        price: number;
+        image?: string | null | undefined;
+    }, import("mongoose").Types.Subdocument<import("bson").ObjectId, unknown, {
         name: string;
         product: import("mongoose").Types.ObjectId;
         quantity: number;
@@ -123,11 +119,30 @@ export declare const getMyOrdersService: ({ userId }: {
         quantity: number;
         price: number;
         image?: string | null | undefined;
-    })[];
-    totalProducts: number;
-    totalItemsCount: number;
-    grandTotal: number;
-} | null>;
+    }>;
+    shippingAddress: {
+        city: string;
+        country: string;
+        fullName: string;
+        phone: string;
+        street?: string | null | undefined;
+    };
+    paymentMethod: "credit" | "paypal" | "simulated";
+    totalPrice: number;
+    shippingCost: number;
+    paymentStatus: "pending" | "paid" | "failed";
+    notes?: string | null | undefined;
+    orderStatus?: "pending" | "processing" | "shipped" | "delivered" | "cancelled" | null | undefined;
+    trackingNumber?: string | null | undefined;
+    createdAt: NativeDate;
+    updatedAt: NativeDate;
+} & {
+    _id: import("mongoose").Types.ObjectId;
+} & {
+    __v: number;
+} & Required<{
+    _id: import("mongoose").Types.ObjectId;
+}>)[] | null>;
 export declare const getOrderByIdService: ({ id }: {
     id: string;
 }) => Promise<import("mongoose").Document<unknown, {}, {

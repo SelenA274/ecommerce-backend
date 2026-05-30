@@ -7,10 +7,12 @@ export const getAllProductsService = async () => {
 
 
 export const getProductByIdService = async ({ id }: { id: string }) => {
-  const product = await Product.findById(id).lean()
-  if (!product) throw {
-    status: 404,
-    message: "Product not found"
+  const product = await Product.findById(id)
+    .populate("ratings.user", "name avatar") // ← أضيفي هاد
+    .lean()
+  if (!product) throw { 
+    status: 404, 
+    message: "Product not found" 
   }
   return product
 }
@@ -35,6 +37,8 @@ export const getProductByCategoryService = async ({
   return products;
 };
 
+const PLACEHOLDER_IMAGE_URL = "https://placeholder.com";
+
 export const createNewProductService = async ({
   name,
   brand,
@@ -47,6 +51,7 @@ export const createNewProductService = async ({
   variantKind,
   variants,
   file,
+  files,
 }: {
   name: string;
   brand: string;
@@ -59,20 +64,43 @@ export const createNewProductService = async ({
   variantKind: string;
   variants: IColorVariant[] | ISizeVariant[];
   file?: Express.Multer.File;
+  files?: Express.Multer.File[];
 }) => {
-  let imageUrl = mainImage ?? null;
+  const directImageUrls = images ?? [];
+  const uploadedUrls: string[] = [];
+  let mainImageUrl = mainImage;
   let imagePublicId: string | null = null;
+
+  if (files?.length) {
+    for (const uploadedFile of files) {
+      const result = (await uploadToCloudinary(uploadedFile.buffer)) as {
+        secure_url: string;
+        public_id: string;
+      };
+      uploadedUrls.push(result.secure_url);
+    }
+  }
 
   if (file) {
     const result = (await uploadToCloudinary(file.buffer)) as {
       secure_url: string;
       public_id: string;
     };
-    imageUrl = result.secure_url;
     imagePublicId = result.public_id;
+    uploadedUrls.push(result.secure_url);
+
+    if (!mainImageUrl || mainImageUrl === PLACEHOLDER_IMAGE_URL) {
+      mainImageUrl = result.secure_url;
+    }
   }
 
-  if (!imageUrl) {
+  const allImages = [...directImageUrls, ...uploadedUrls];
+
+  if (!mainImageUrl || mainImageUrl === PLACEHOLDER_IMAGE_URL) {
+    mainImageUrl = allImages[0] ?? null;
+  }
+
+  if (!mainImageUrl) {
     throw {
       status: 400,
       message: "mainImage or product image file is required",
@@ -86,8 +114,8 @@ export const createNewProductService = async ({
     price,
     department,
     subcategory,
-    mainImage: imageUrl,
-    images: images?.length ? images : [imageUrl],
+    mainImage: mainImageUrl,
+    images: allImages.length ? allImages : [mainImageUrl],
     imagePublicId,
     variantKind,
     variants,
@@ -128,6 +156,7 @@ export const addRatingService = async ({ id, userId, rating, comment }: { id: st
     comment: comment || ""
   })
   await product.save()
+  await product.populate("ratings.user", "name avatar")
   return product.ratings
 }
 

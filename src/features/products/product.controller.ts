@@ -73,6 +73,7 @@ export const getProductByCategory = async (req: Request, res: Response): Promise
         variantKind,
         variants,
       } = req.body
+      const uploadedFiles = req.files as Record<string, Express.Multer.File[]> | undefined
       const product = await createNewProductService({
         name,
         brand,
@@ -84,7 +85,8 @@ export const getProductByCategory = async (req: Request, res: Response): Promise
         images,
         variantKind,
         variants,
-        file: req.file,
+        file: req.file ?? uploadedFiles?.image?.[0],
+        files: uploadedFiles?.images,
       })
 
         res.status(201).json({
@@ -93,7 +95,7 @@ export const getProductByCategory = async (req: Request, res: Response): Promise
             data: product
         })
     } catch (error) {
-        // console.log("error : ", error)
+        console.log("error : ", error)
         res.status(500).json({
             status: 500,
             message: "Failed to create product",

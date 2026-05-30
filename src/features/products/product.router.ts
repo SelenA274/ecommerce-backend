@@ -4,6 +4,7 @@ import { isAdmin } from "../../shared/middleware/isAdmin.js"
 import { upload } from "../../config/multer.js"
 import { validateRequest} from "../../shared/middleware/validateRequest.js"
 import { objectIdSchema } from "../../shared/schemas/objectId.schema.js"
+import {parseFormFields } from "../../shared/middleware/parseFormFields.js"
 
 import {
   createProductSchema,
@@ -24,7 +25,7 @@ const router: Router = express.Router()
 
 router.get("/", getAllProducts)
 router.get("/category/:category", getProductByCategory)
-router.post("/", authMiddleware, isAdmin, upload.single("image"), validateRequest(createProductSchema, "body"), createNewProduct)
+router.post("/", authMiddleware, isAdmin, upload.fields([{ name: "image", maxCount: 1 }, { name: "images", maxCount: 10 }]), parseFormFields, validateRequest(createProductSchema, "body"), createNewProduct)
 router.get("/:id", validateRequest(objectIdSchema, "params"), getProductById)
 router.put("/:id", authMiddleware, isAdmin, validateRequest(objectIdSchema, "params"), validateRequest(updateProductSchema, "body"), updateProduct)
 router.delete("/:id", authMiddleware, isAdmin, validateRequest(objectIdSchema, "params"), deleteProduct)

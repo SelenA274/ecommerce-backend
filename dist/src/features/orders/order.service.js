@@ -52,32 +52,38 @@ export const createOrderService = async ({ userId, items, shippingAddress, payme
     }
     return createdOrder;
 };
+// export const getMyOrdersService = async ({ userId }: { userId: string }) => {
+//     const orders = await Order.find({ userId }).sort({ createdAt: -1 }).lean();
+//     if (orders.length === 0)
+//         return null
+//     const commonInfo = {
+//         shippingAddress: orders[0].shippingAddress,
+//         paymentMethod: orders[0].paymentMethod,
+//         paymentStatus: orders[0].paymentStatus
+//     }
+//     let totalItemsCount = 0
+//     let grandTotal = 0
+//     let allItems: typeof orders[0]["items"][0][] = []
+//     orders.forEach(order => {
+//         order.items.forEach(item => {
+//             totalItemsCount += item.quantity
+//         })
+//         grandTotal += order.totalPrice
+//         allItems = allItems.concat(order.items)
+//     })
+//     return {
+//         summary: commonInfo,
+//         items: allItems,
+//         totalProducts: allItems.length,
+//         totalItemsCount,
+//         grandTotal: Number(grandTotal.toFixed(2))
+//     }
+// }
 export const getMyOrdersService = async ({ userId }) => {
     const orders = await Order.find({ userId }).sort({ createdAt: -1 }).lean();
     if (orders.length === 0)
         return null;
-    const commonInfo = {
-        shippingAddress: orders[0].shippingAddress,
-        paymentMethod: orders[0].paymentMethod,
-        paymentStatus: orders[0].paymentStatus
-    };
-    let totalItemsCount = 0;
-    let grandTotal = 0;
-    let allItems = [];
-    orders.forEach(order => {
-        order.items.forEach(item => {
-            totalItemsCount += item.quantity;
-        });
-        grandTotal += order.totalPrice;
-        allItems = allItems.concat(order.items);
-    });
-    return {
-        summary: commonInfo,
-        items: allItems,
-        totalProducts: allItems.length,
-        totalItemsCount,
-        grandTotal: Number(grandTotal.toFixed(2))
-    };
+    return orders;
 };
 export const getOrderByIdService = async ({ id }) => {
     const order = await Order.findById(id);

@@ -4,16 +4,22 @@ import { getTotalStock } from "../products/product.utils.js";
 export const getCart = async (req, res) => {
     try {
         const userId = req.user.id;
-        const cart = await Cart.findOne({ userId }).populate("items.product", "name price images mainImage variants isActive");
+        const cart = await Cart.findOne({ userId })
+            .populate("items.product", "name price images mainImage variants isActive");
         if (!cart) {
-            res.status(200).json({
-                status: 200,
-                message: "Cart is empty",
-                data: { items: [] }
-            });
+            res.status(200).json({ status: 200, message: "Cart is empty", data: { items: [] } });
             return;
         }
-        const totalPrice = cart.items
+        const itemsWithVariant = cart.items.map(item => {
+            const variant = item.variant && item.product?.variants
+                ? item.product.variants.find((v) => String(v._id) === String(item.variant))
+                : null;
+            return {
+                ...item.toObject(),
+                variant: variant ?? null
+            };
+        });
+        const totalPrice = itemsWithVariant
             .filter(item => item.product && item.product.isActive)
             .reduce((sum, item) => sum + item.product.price * item.quantity, 0);
         res.status(200).json({
@@ -21,6 +27,7 @@ export const getCart = async (req, res) => {
             message: "Cart fetched successfully",
             data: {
                 ...cart.toObject(),
+                items: itemsWithVariant,
                 totalPrice: parseFloat(totalPrice.toFixed(2)),
                 itemCount: cart.items.length
             }
