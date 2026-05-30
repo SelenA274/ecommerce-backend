@@ -1,11 +1,15 @@
 import Order from "./order.model.js"
 import Product from "../products/product.model.js"
+import { sendOrderConfirmationEmail } from "../../shared/utils/sendOrderConfirmationEmail.js"
+import { sendOrderStatusUpdateEmail } from "../../shared/utils/sendOrderStatusUpdateEmail.js"
+import User from "../users/user.model.js"
+
 import {
     deductProductStock,
     getTotalStock,
     restoreProductStock,
 } from "../products/product.utils.js"
-import { io } from "../../../server.js"
+import { io } from "../../config/socket.js"
 
 type OrderItem = {
     product: string
@@ -61,8 +65,17 @@ export const createOrderService = async ({ userId, items, shippingAddress, payme
         paymentStatus: "pending", orderStatus: "pending",
         notes: notes || ""
     })
+    const user = await User.findById(userId).select("email")
+    if (user?.email) {
+        sendOrderConfirmationEmail(
+            user.email,
+            String(createdOrder._id),
+            orderItems,
+            shippingAddress,
+            totalPrice
+        ).catch(console.error)
+    }
 
-    // Socket.IO events
     io.emit("order-created", { orderId: createdOrder._id })
     for (const item of orderItems) {
         const updatedProduct = await Product.findById(item.product)
@@ -74,43 +87,11 @@ export const createOrderService = async ({ userId, items, shippingAddress, payme
     return createdOrder
 }
 
-// export const getMyOrdersService = async ({ userId }: { userId: string }) => {
-//     const orders = await Order.find({ userId }).sort({ createdAt: -1 }).lean();
-
-//     if (orders.length === 0)
-//         return null
-
-//     const commonInfo = {
-//         shippingAddress: orders[0].shippingAddress,
-//         paymentMethod: orders[0].paymentMethod,
-//         paymentStatus: orders[0].paymentStatus
-//     }
-
-//     let totalItemsCount = 0
-//     let grandTotal = 0
-//     let allItems: typeof orders[0]["items"][0][] = []
-
-//     orders.forEach(order => {
-//         order.items.forEach(item => {
-//             totalItemsCount += item.quantity
-//         })
-//         grandTotal += order.totalPrice
-//         allItems = allItems.concat(order.items)
-//     })
-
-//     return {
-//         summary: commonInfo,
-//         items: allItems,
-//         totalProducts: allItems.length,
-//         totalItemsCount,
-//         grandTotal: Number(grandTotal.toFixed(2))
-//     }
-// }
 export const getMyOrdersService = async ({ userId }: { userId: string }) => {
     const orders = await Order.find({ userId }).sort({ createdAt: -1 }).lean()
     if (orders.length === 0) return null
     return orders
-  }
+}
 
 
 export const getOrderByIdService = async ({ id }: { id: string }) => {
@@ -138,6 +119,17 @@ export const updateOrderStatusService = async ({ id, orderStatus, trackingNumber
         status: 404,
         message: "Order not found"
     }
+
+    const user = await User.findById(order.userId).select("email")
+    if (user?.email) {
+        sendOrderStatusUpdateEmail(
+            user.email,
+            String(order._id),
+            orderStatus,
+            trackingNumber
+        ).catch(console.error)
+    }
+
     return order
 }
 

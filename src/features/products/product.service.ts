@@ -1,8 +1,58 @@
 import { Product } from "./product.model.js"
 import { uploadToCloudinary } from "./cloudinary.service.js"
 import { IColorVariant, IProduct, ISizeVariant } from "../../types/product.types.js";
-export const getAllProductsService = async () => {
-  return await Product.find({ isActive: true }).sort({ createdAt: -1 });
+
+
+export const getAllProductsService = async ({
+  page = 1,
+  limit = 20,
+  department,
+  subcategory,
+  minPrice,
+  maxPrice,
+  sort = "createdAt",
+}: {
+  page?: number
+  limit?: number
+  department?: string
+  subcategory?: string
+  minPrice?: number
+  maxPrice?: number
+  sort?: string
+} = {}) => {
+  const filter: any = { isActive: true }
+
+  if (department) filter.department = department
+  if (subcategory) filter.subcategory = subcategory
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    filter.price = {}
+    if (minPrice !== undefined) filter.price.$gte = minPrice
+    if (maxPrice !== undefined) filter.price.$lte = maxPrice
+  }
+
+  const sortMap: Record<string, any> = {
+    createdAt: { createdAt: -1 },
+    price_asc: { price: 1 },
+    price_desc: { price: -1 },
+    rating: { averageRating: -1 },
+  }
+
+  const skip = (page - 1) * limit
+  const [products, total] = await Promise.all([
+    Product.find(filter)
+      .sort(sortMap[sort] ?? { createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Product.countDocuments(filter),
+  ])
+
+  return {
+    data: products,
+    currentPage: page,
+    totalPages: Math.ceil(total / limit),
+    totalCount: total,
+  }
 }
 
 
@@ -10,9 +60,9 @@ export const getProductByIdService = async ({ id }: { id: string }) => {
   const product = await Product.findById(id)
     .populate("ratings.user", "name avatar") // ← أضيفي هاد
     .lean()
-  if (!product) throw { 
-    status: 404, 
-    message: "Product not found" 
+  if (!product) throw {
+    status: 404,
+    message: "Product not found"
   }
   return product
 }
