@@ -73,7 +73,7 @@ export const forgotPasswordService = async ({ email }: { email: string }) => {
 
   await sendResetPasswordEmail(email, token);
   return true;
-};
+}
 
 export const resetPasswordService = async ({
   token,

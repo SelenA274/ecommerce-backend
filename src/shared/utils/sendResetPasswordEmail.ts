@@ -1,8 +1,8 @@
 import { transporter } from "./mailer.js"
 
 export const sendResetPasswordEmail = async (email: string, token: string): Promise<void> => {
-    const resetLink = `http://localhost:3000/auth/reset-password/${token}`
-    
+    const resetLink = `${process.env.RESET_PASSWORD_URL}/${token}`
+    console.log("RESET_PASSWORD_URL:", process.env.RESET_PASSWORD_URL)
     await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,

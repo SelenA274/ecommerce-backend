@@ -78,6 +78,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       data: null 
     });
   } catch (error) {
+    // console.log("error:", error)
     res.status(500).json({ 
       status: 500, 
       message: "Failed to send reset password email", 
