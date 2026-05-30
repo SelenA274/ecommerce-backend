@@ -10,23 +10,13 @@ import ordersRoute from "./features/orders/order.router.js"
 import productsRoute from "./features/products/product.router.js"
 import cartRoute from "./features/cart/cart.router.js"
 import { errorHandler } from "./shared/middleware/errorHandler.js"
-
+import { globalLimiter } from "./config/rateLimiter.js"
 
 const app: Express = express()
 app.use(hpp())
 
 const FIFTEEN_MINUTES = 15 * 60 * 1000
 
-const globalLimiter = rateLimit({
-  windowMs: FIFTEEN_MINUTES,
-  limit: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (_req, res) => res.status(429).json({
-    status: 429,
-    message: "Too many requests. Please try again in 15 minutes.",
-  }),
-})
 
 export const authLimiter = rateLimit({
   windowMs: FIFTEEN_MINUTES,

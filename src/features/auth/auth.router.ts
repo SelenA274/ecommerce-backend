@@ -1,6 +1,6 @@
 import { authMiddleware } from "../../shared/middleware/authMIddleware.js"
 import express, { Router } from "express"
-import { authLimiter } from "../../app.js"
+import { authLimiter } from "../../config/rateLimiter.js"
 import {
   login,
   register,
