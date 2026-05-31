@@ -9,7 +9,6 @@ import {
   ProductSeedInput,
 } from "../../types/product.types.js";
 
-/** Curated Unsplash beauty imagery (stable direct URLs). */
 export const IMAGES = {
   lips: [
     "https://images.unsplash.com/photo-1586495777744-4413f210faa0?auto=format&fit=crop&w=800&q=80",

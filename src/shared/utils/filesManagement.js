@@ -1,7 +1,3 @@
-
-// هاد الملف بيقرأ ويكتب ملفات JSON — كان مستخدم بالبداية قبل ما يضيفوا MongoDB. هلق ما في داعي منه.
-// بعثيلي product.schemas.js
-
 import fs from "fs/promises"
 
 async function readJsonFile(filePath) {

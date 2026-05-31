@@ -1,6 +1,11 @@
 import { Product } from "./product.model.js"
 import { uploadToCloudinary } from "./cloudinary.service.js"
-import { IColorVariant, IProduct, ISizeVariant } from "../../types/product.types.js";
+import { IColorVariant, IProduct, ISizeVariant } from "../../types/product.types.js"
+import {
+  Department,
+  ProductSubcategory,
+  VariantKind,
+} from "./product.constants.js"
 
 
 export const getAllProductsService = async ({
@@ -58,7 +63,7 @@ export const getAllProductsService = async ({
 
 export const getProductByIdService = async ({ id }: { id: string }) => {
   const product = await Product.findById(id)
-    .populate("ratings.user", "name avatar") // ← أضيفي هاد
+    .populate("ratings.user", "name avatar") 
     .lean()
   if (!product) throw {
     status: 404,
@@ -75,7 +80,10 @@ export const getProductByCategoryService = async ({
   const normalized = category.toLowerCase();
   const products = await Product.find({
     isActive: true,
-    $or: [{ department: normalized }, { subcategory: normalized }],
+    $or: [
+      { department: normalized as Department },
+      { subcategory: normalized as ProductSubcategory },
+    ],
   }).sort({ createdAt: -1 });
 
   if (!products.length) {
@@ -107,11 +115,11 @@ export const createNewProductService = async ({
   brand: string;
   description: string;
   price: number;
-  department: string;
-  subcategory: string;
+  department: Department;
+  subcategory: ProductSubcategory;
   mainImage?: string;
   images?: string[];
-  variantKind: string;
+  variantKind: VariantKind;
   variants: IColorVariant[] | ISizeVariant[];
   file?: Express.Multer.File;
   files?: Express.Multer.File[];

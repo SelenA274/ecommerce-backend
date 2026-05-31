@@ -34,7 +34,6 @@ export const ALL_SUBCATEGORIES = Object.values(
 export const VARIANT_KINDS = ["color", "size"] as const;
 export type VariantKind = (typeof VARIANT_KINDS)[number];
 
-/** Makeup shade products use color variants; tools and all other departments use size/volume. */
 export function resolveVariantKind(
   department: Department,
   subcategory: string
