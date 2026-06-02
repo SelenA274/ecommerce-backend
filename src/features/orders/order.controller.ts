@@ -13,6 +13,7 @@ export const createOrder =  async (req: Request, res: Response) => {
     items,
     shippingAddress,
     paymentMethod,
+    paymentResult,
     notes,
     shippingCost
   } = req.body
@@ -46,7 +47,8 @@ export const createOrder =  async (req: Request, res: Response) => {
     const order = await createOrderService({ 
       userId: req.user!.id, 
       items, shippingAddress, 
-      paymentMethod, 
+      paymentMethod,
+      paymentResult,
       notes, 
       shippingCost 
     })
@@ -57,10 +59,11 @@ export const createOrder =  async (req: Request, res: Response) => {
       data: order
     })
   } catch (error) {
-    console.log("the error issss : ", error)
-    return res.status(500).json({
-      status: 500,
-      message: "Failed to create order",
+    const err = error as { status?: number; message?: string }
+    const status = err.status ?? 500
+    return res.status(status).json({
+      status,
+      message: err.message ?? "Failed to create order",
       data: null
     })
   }

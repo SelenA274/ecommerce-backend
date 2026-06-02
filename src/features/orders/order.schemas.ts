@@ -21,7 +21,15 @@ export const createOrderSchema = Joi.object({
   paymentMethod: Joi.string()
     .valid("credit", "paypal", "simulated")
     .required(),
+  paymentResult: Joi.string()
+    .valid("success", "failure")
+    .when("paymentMethod", {
+      is: "simulated",
+      then: Joi.required(),
+      otherwise: Joi.forbidden(),
+    }),
   notes: Joi.string().max(500),
+  shippingCost: Joi.number().min(0).default(0),
 }).options({ stripUnknown: true })
 
 export const updateOrderStatusSchema = Joi.object({

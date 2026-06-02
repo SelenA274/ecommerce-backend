@@ -15,14 +15,27 @@ type OrderItem = {
     product: string
     quantity: number
 }
-type shippingAddress = {
+type ShippingAddress = {
     fullName: string
     phone: string
     country: string
     city: string
     street?: string
 }
-export const createOrderService = async ({ userId, items, shippingAddress, paymentMethod, notes, shippingCost = 0 }: { userId: string; items: OrderItem[]; shippingAddress: shippingAddress; paymentMethod: string; notes: string; shippingCost: number; }) => {
+type PaymentMethod = "credit" | "paypal" | "simulated"
+type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled"
+
+export const createOrderService = async ({ userId, items, shippingAddress, paymentMethod, paymentResult, notes, shippingCost = 0 }: { userId: string; items: OrderItem[]; shippingAddress: ShippingAddress; paymentMethod: PaymentMethod; paymentResult?: "success" | "failure"; notes?: string; shippingCost?: number; }) => {
+    if (paymentMethod === "simulated" && paymentResult === "failure") {
+        throw {
+            status: 402,
+            message: "Payment failed. Order was not created.",
+        }
+    }
+
+    const paymentStatus = paymentMethod === "simulated" ? "paid" : "pending"
+    const orderStatus = paymentMethod === "simulated" ? "processing" : "pending"
+
     let totalItemsPrice = 0
     const orderItems = []
 
@@ -62,7 +75,7 @@ export const createOrderService = async ({ userId, items, shippingAddress, payme
     const createdOrder = await Order.create({
         userId, items: orderItems, shippingAddress,
         totalPrice, shippingCost, paymentMethod,
-        paymentStatus: "pending", orderStatus: "pending",
+        paymentStatus, orderStatus,
         notes: notes || ""
     })
     const user = await User.findById(userId).select("email")
@@ -109,7 +122,7 @@ export const getAllOrdersService = async () => {
         .sort({ createdAt: -1 })
 }
 
-export const updateOrderStatusService = async ({ id, orderStatus, trackingNumber }: { id: string; orderStatus: string; trackingNumber: string; }) => {
+export const updateOrderStatusService = async ({ id, orderStatus, trackingNumber }: { id: string; orderStatus: OrderStatus; trackingNumber?: string; }) => {
     const order = await Order.findByIdAndUpdate(
         id,
         { orderStatus, trackingNumber },
@@ -140,16 +153,15 @@ export const cancelOrderService = async ({ id }: { id: string }) => {
         status: 404,
         message: "Order not found"
     }
+    if (order.orderStatus !== "pending") throw {
+        status: 400,
+        message: "Only pending orders can be cancelled"
+    }
     for (const item of order.items) {
         const product = await Product.findById(item.product)
         if (!product) continue
         restoreProductStock(product, item.quantity)
         await product.save()
-    }
-
-    if (order.orderStatus !== "pending") throw {
-        status: 400,
-        message: "Only pending orders can be cancelled"
     }
     await Order.findByIdAndDelete(id)
     return true
